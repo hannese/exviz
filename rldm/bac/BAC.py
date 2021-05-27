@@ -213,3 +213,94 @@ class TabularBAC:
 
             for s in range(self.num_states):
                 self.PI[s] = np.exp(self.w[s]) / np.sum(np.exp(self.w[s]))
+
+# Epistemic risk-sensitive BAC
+class TabularEPBAC(TabularBAC):
+    def __init__(self, num_states, num_actions, gamma, alpha, beta, num_samples=100, num_iterations=1000):
+        self.reward_prior = self.RewardPriorNG(num_states, num_actions)
+        self.transition_prior = self.TransitionPriorDirichlet(num_states, num_actions)
+        self.num_states = num_states
+        self.num_actions = num_actions
+        self.gamma = gamma
+        self.alpha = alpha
+        self.beta = beta
+        self.num_iterations = num_iterations
+        self.num_samples = num_samples
+        self.w = np.ones((num_states, num_actions))
+        self.PI = np.ones((num_states, num_actions)) / num_actions
+        self.reset_weights = False
+
+    def update_policy(self):
+        if self.reset_weights:
+            self.w = np.ones((self.num_states, self.num_actions))
+
+        for s in range(self.num_states):
+            self.PI[s] = np.exp(self.w[s]) / np.sum(np.exp(self.w[s]))
+
+        for t in range(self.num_iterations):
+            VV = np.zeros((3, self.num_samples, self.num_states))
+            QQ = np.zeros((3, self.num_samples, self.num_states, self.num_actions))
+
+            for i in range(3):
+                Rs, Ts = self.sample_models(self.reward_prior, self.transition_prior, self.num_samples)
+                for j in range(self.num_samples):
+                    V, Q = self.policy_evaluation(Rs[j], Ts[j], self.PI, self.gamma)
+                    VV[i, j] = V.flatten()
+                    QQ[i, j] = Q
+
+            dTheta = np.zeros((self.num_states, self.num_actions))
+
+            for s in range(self.num_states):
+                for a in range(self.num_actions):
+                    score = 1 - np.exp(self.w[s][a]) / np.sum(np.exp(self.w[s]))
+                    num = np.mean(np.exp(
+                        self.beta * (QQ[0, :, s, a] - np.min(QQ[0, :, s, a])) /
+                        (np.max(QQ[0, :, s, a]) - np.min(QQ[0, :, s, a]))))
+                    den = np.mean(
+                        np.exp(self.beta * (QQ[2, :, s, a] - np.min(QQ[2, :, s, a])) /
+                               (np.max(QQ[2, :, s, a]) - np.min(QQ[2, :, s, a]))))
+                    dTheta[s][a] = self.alpha * score * num \
+                                   * (np.mean(QQ[1, :, s, a])-np.mean(VV[1, :, s])) / den
+            self.w += dTheta
+
+            for s in range(self.num_states):
+                self.PI[s] = np.exp(self.w[s]) / np.sum(np.exp(self.w[s]))
+
+import gym
+def main():
+    env_list = ['NChain-v0', 'FrozenLake-v0', 'Roulette-v0']
+
+    gamma = 0.99
+    alpha = 0.1
+    num_samples = 100
+    num_iterations = 1000
+    max_episodes = 1000
+    num_updates = 5
+    beta = -1.0
+
+    returns = np.zeros((len(env_list), max_episodes // num_updates, num_updates))
+
+    for i in range(len(env_list)):
+        env = gym.make(env_list[i])
+        num_states = env.observation_space.n
+        num_actions = env.action_space.n
+        BAC = TabularEPBAC(num_states, num_actions, gamma, alpha, beta, num_samples, num_iterations)
+        s = env.reset()
+        episodic_reward = 0
+        for t in range(max_episodes):
+            if t % (max_episodes // num_updates) == 0:
+                BAC.update_policy()
+            while True:
+                a = BAC.get_action(s)
+                s_, r, done, _ = env.step(a)
+                BAC.update(s, a, r, s_, done)
+                episodic_reward += r
+                if done:
+                    s = env.reset()
+                    returns[i, t % (max_episodes // num_updates), t // (max_episodes // num_updates)] = episodic_reward
+                    episodic_reward = 0
+                    break
+                else:
+                    s = s_
+if __name__ == "__main__":
+    main()
