@@ -270,6 +270,7 @@ def _bayesianmultivariateregression(seed = 42, data_points = 10000):
     Y = (A @ data.T + b + np.random.multivariate_normal(np.zeros(d), E, size=(data_points)).T).T
 
     expected_A_LS = Y.T @ np.linalg.pinv(data.T)
+    expected_V_LS = np.cov(Y - data @ expected_A_LS.T, rowvar=False)
 
     pS = np.eye(d)
     blr = BayesianMultivariateRegression(d, d, pS, d+1, 0.001)
@@ -283,7 +284,7 @@ def _bayesianmultivariateregression(seed = 42, data_points = 10000):
     print("Testing BayesianMultivariateRegression ...")
     print("Seed: ", seed, "data_points: ", data_points)
     print("Actual A: ", np.around(A.flatten(), 2), " \t\tLS A: ", np.around(expected_A_LS.flatten(), 2), " \t\tBMR A: ", np.around(expected_A_BLR.flatten(), 2))
-    print("Actual V: ", np.around(E.flatten(), 2), " \t\tLS V: N/A", " \t\tBMR V: ", np.around(expected_V_BLR.flatten(), 2))
+    print("Actual V: ", np.around(E.flatten(), 2), " \t\tLS V: ", np.around(expected_V_LS.flatten(), 2), " \t\tBMR V: ", np.around(expected_V_BLR.flatten(), 2))
 
 
 
