@@ -1,6 +1,6 @@
 import numpy as np
 import runstats
-from scipy.stats import t, dirichlet, multinomial, multivariate_normal, invwishart
+from scipy.stats import t, dirichlet, multinomial, multivariate_normal, invwishart, invgamma
 
 class ConjugateDirichlet:
     def __init__(self, d, alphas_0=None):
@@ -101,9 +101,9 @@ class ConjugateNormalInverseGamma:
         return normal_sample
 
     def posterior_sample(self):
-        gamma_sample = np.random.gamma(self.alpha, self.beta)
-        normal_sample = np.random.normal(self.mu,
-                                         2 * np.sqrt(gamma_sample / (self.kappa * self.kappa)))
+
+        gamma_sample = invgamma.rvs(self.alpha, self.beta)
+        normal_sample = np.random.normal(self.mu, np.sqrt(gamma_sample /  (0.5 * self.kappa)))
         return normal_sample
 
 '''
