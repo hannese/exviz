@@ -95,9 +95,8 @@ class ConjugateNormalInverseGamma:
         return t(t_df, t_mu, t_scale)
 
     def prior_sample(self):
-        gamma_sample = np.random.gamma(self.alpha_0, self.beta_0)
-        normal_sample = np.random.normal(self.mu_0,
-                                         2 * np.sqrt(gamma_sample / (self.kappa_0 * self.kappa_0)))
+        gamma_sample = invgamma.rvs(self.alpha_0, self.beta_0)
+        normal_sample = np.random.normal(self.mu_0, np.sqrt(gamma_sample / (0.5 * self.kappa_0)))
         return normal_sample
 
     def posterior_sample(self):
