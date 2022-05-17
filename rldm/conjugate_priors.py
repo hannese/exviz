@@ -257,7 +257,7 @@ def _normalgamma(seed = 42, data_points=10000):
 def _bayesianmultivariateregression(seed = 42, data_points = 10000):
 
     np.random.seed(seed)
-    
+
     A = np.array([[1.0, 2.0],
                  [3.0, 4.0]])
 
@@ -283,7 +283,7 @@ def _bayesianmultivariateregression(seed = 42, data_points = 10000):
     print("Testing BayesianMultivariateRegression ...")
     print("Seed: ", seed, "data_points: ", data_points)
     print("Actual A: ", np.around(A.flatten(), 2), " \t\tLS A: ", np.around(expected_A_LS.flatten(), 2), " \t\tBMR A: ", np.around(expected_A_BLR.flatten(), 2))
-    print("Actual V: ", np.around(E.flatten(), 2), " \t\tLS A: N/A", " \t\tBMR A: ", np.around(expected_V_BLR.flatten(), 2))
+    print("Actual V: ", np.around(E.flatten(), 2), " \t\tLS V: N/A", " \t\tBMR V: ", np.around(expected_V_BLR.flatten(), 2))
 
 
 
